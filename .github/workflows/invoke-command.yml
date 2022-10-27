@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Infracost
-        uses: digraph/integration-testing-cli
+        uses: di-graph/config-validator-testing-github-actions/setup@v0.0.
 
       # Echo command
       - name: Echo Integration Testing CLI command
