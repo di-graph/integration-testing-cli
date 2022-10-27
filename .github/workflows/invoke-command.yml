@@ -6,7 +6,11 @@ jobs:
     name: Digraph Call Integration Testing CLI
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Infracost
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Integration CLI
         uses: di-graph/config-validator-testing-github-actions@v0.1
 
       # Echo command
