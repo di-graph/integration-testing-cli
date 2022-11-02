@@ -9,4 +9,4 @@ jobs:
     steps:
       - name: Echo Integration Testing CLI command
         run: |
-          integration-testing-cli echo hello
+          integration-testing-cli echo helloworld
