@@ -1,0 +1,12 @@
+# The GitHub Actions docs (https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#on)
+# describe other options for 'on', 'pull_request' is a good default.
+on: [pull_request]
+jobs:
+  node-docker:
+    runs-on: ubuntu-latest
+    container:
+      image: digraph/integration-testing-cli
+    steps:
+      - name: Echo Integration Testing CLI command
+        run: |
+          integration-testing-cli echo hello
