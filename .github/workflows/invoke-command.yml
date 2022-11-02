@@ -11,7 +11,7 @@ jobs:
       #   run: |
       #     integration-testing-cli echo helloworld
     steps:
-      - uses: docker://digraph/integration-testing-cli
+      - uses: docker://digraph/integration-testing-cli:latest
         with:
-          entrypoint: /integration-testing-cli
+          entrypoint: /integration-testing-cli echo multiple --times 4
         
