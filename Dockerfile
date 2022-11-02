@@ -20,6 +20,6 @@ WORKDIR /app
 COPY . . 
 
 RUN go mod download
-RUN go build -o /build/integration-testing-cli github.com/di-graph/integration-testing-cli
-RUN chmod +x /build/integration-testing-cli
-ENTRYPOINT ["/build/integration-testing-cli"] 
+RUN go build -o /integration-testing-cli github.com/di-graph/integration-testing-cli
+RUN chmod +x /integration-testing-cli
+ENTRYPOINT ["/integration-testing-cli"] 
