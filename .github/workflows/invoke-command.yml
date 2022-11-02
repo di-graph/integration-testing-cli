@@ -1,19 +1,29 @@
 # The GitHub Actions docs (https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#on)
 # describe other options for 'on', 'pull_request' is a good default.
 on: [pull_request]
-jobs:
-  digraph-integration-testing-cli:
-    name: Digraph Call Integration Testing CLI
+# jobs:
+  # digraph-integration-testing-cli:
+  #   name: Digraph Call Integration Testing CLI
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     # Checkout the repository to the GitHub Actions runner
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+
+  #     - name: Setup Integration CLI
+  #       uses: di-graph/integration-testing-github-action@v0.15
+
+  #     # Echo command
+  #     - name: Echo Integration Testing CLI command
+  #       run: |
+  #         integration-testing-cli echo hello
+
+  jobs:
+  node-docker:
     runs-on: ubuntu-latest
+    container:
+      image: digraph/integration-testing-cli
     steps:
-      # Checkout the repository to the GitHub Actions runner
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup Integration CLI
-        uses: di-graph/integration-testing-github-action@v0.15
-
-      # Echo command
       - name: Echo Integration Testing CLI command
         run: |
           integration-testing-cli echo hello
