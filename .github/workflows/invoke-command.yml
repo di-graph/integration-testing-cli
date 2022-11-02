@@ -2,16 +2,17 @@
 # describe other options for 'on', 'pull_request' is a good default.
 on: [pull_request]
 jobs:
-  node-docker:
+  echo-integration-testing-cli:
     runs-on: ubuntu-latest
-    # container:
-    #   image: digraph/integration-testing-cli
-    # steps:
-      # - name: Echo Integration Testing CLI command
-      #   run: |
-      #     integration-testing-cli echo helloworld
+    container:
+      image: digraph/integration-testing-cli:latest
+      options: "--entrypoint /integration-testing-cli"
     steps:
-      - uses: docker://digraph/integration-testing-cli:latest
-        with:
-          entrypoint: /integration-testing-cli echo multiple --times 4
+      - name: Echo Integration Testing CLI command
+        run: |
+          integration-testing-cli echo helloworld
+    # steps:
+    #   - uses: docker://digraph/integration-testing-cli:latest
+    #     with:
+    #       entrypoint: /integration-testing-cli
         
