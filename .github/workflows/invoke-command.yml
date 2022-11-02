@@ -4,9 +4,14 @@ on: [pull_request]
 jobs:
   node-docker:
     runs-on: ubuntu-latest
-    container:
-      image: digraph/integration-testing-cli
+    # container:
+    #   image: digraph/integration-testing-cli
+    # steps:
+      # - name: Echo Integration Testing CLI command
+      #   run: |
+      #     integration-testing-cli echo helloworld
     steps:
-      - name: Echo Integration Testing CLI command
-        run: |
-          integration-testing-cli echo helloworld
+      - uses: digraph/integration-testing-cli:latest
+        with:
+          entrypoint: /integration-testing-cli
+        
