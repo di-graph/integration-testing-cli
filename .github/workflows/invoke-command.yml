@@ -11,7 +11,7 @@ jobs:
       #   run: |
       #     integration-testing-cli echo helloworld
     steps:
-      - uses: digraph/integration-testing-cli:latest
+      - uses: digraph/integration-testing-cli
         with:
           entrypoint: /integration-testing-cli
         
