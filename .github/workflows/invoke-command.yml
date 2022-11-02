@@ -2,16 +2,23 @@
 # describe other options for 'on', 'pull_request' is a good default.
 on: [pull_request]
 jobs:
-  echo-integration-testing-cli:
+  digraph-integration-testing-cli:
+    name: Digraph Call Integration Testing CLI
     runs-on: ubuntu-latest
-    container:
-      image: digraph/integration-testing-cli:latest
-      options: "--entrypoint /integration-testing-cli"
     steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Integration CLI
+        uses: di-graph/integration-testing-github-action@v0.16
+
+      # Echo command
       - name: Echo Integration Testing CLI command
         run: |
-          integration-testing-cli echo helloworld
-    # steps:
+          integration-testing-cli echo hello
+
+  # steps:
     #   - uses: docker://digraph/integration-testing-cli:latest
     #     with:
     #       entrypoint: /integration-testing-cli
