@@ -10,7 +10,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Integration CLI
-        uses: di-graph/integration-testing-github-action@v0.28
+        uses: di-graph/integration-testing-github-action@v0.29
 
       # Run test command
       - name: Echo Integration Testing CLI command
