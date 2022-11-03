@@ -16,8 +16,5 @@ jobs:
       # Echo command
       - name: Echo Integration Testing CLI command
         run: |
-          integration-testing-cli echo hello
-      - name: Integration Testing CLI command Multiple
-        run: |
-          integration-testing-cli echo multiple --times=7
-        
+          integration-testing-cli echo hello && integration-testing-cli echo multiple --times=7
+      
