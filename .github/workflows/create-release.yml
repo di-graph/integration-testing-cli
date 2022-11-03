@@ -30,10 +30,6 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-<<<<<<< Updated upstream
-=======
-          push: true
->>>>>>> Stashed changes
           platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
