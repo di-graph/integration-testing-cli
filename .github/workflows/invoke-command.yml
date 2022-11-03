@@ -6,17 +6,13 @@ jobs:
     name: Digraph Call Integration Testing CLI
     runs-on: ubuntu-latest
     steps:
-      # Checkout the repository to the GitHub Actions runner
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Setup Integration CLI
         uses: di-graph/integration-testing-github-action@v0.28
 
-      - name: File details
-        run: |
-          file integration-testing-cli
-      # Echo command
+      # Run test command
       - name: Echo Integration Testing CLI command
         run: |
           integration-testing-cli echo hello
