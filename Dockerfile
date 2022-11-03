@@ -20,6 +20,7 @@ WORKDIR /app
 COPY . . 
 
 RUN go mod download
-RUN go build -o /integration-testing-cli github.com/di-graph/integration-testing-cli
+# RUN env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /integration-testing-cli github.com/di-graph/integration-testing-cli
+RUN NO_DIRTY=true make build
 RUN chmod +x /integration-testing-cli
 ENTRYPOINT ["/integration-testing-cli"] 
