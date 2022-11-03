@@ -17,9 +17,4 @@ jobs:
       - name: Echo Integration Testing CLI command
         run: |
           integration-testing-cli echo hello
-
-  # steps:
-    #   - uses: docker://digraph/integration-testing-cli:latest
-    #     with:
-    #       entrypoint: /integration-testing-cli
         
