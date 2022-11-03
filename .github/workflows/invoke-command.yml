@@ -13,6 +13,9 @@ jobs:
       - name: Setup Integration CLI
         uses: di-graph/integration-testing-github-action@v0.27
 
+      - name: File details
+        run: |
+          file integration-testing-cli
       # Echo command
       - name: Echo Integration Testing CLI command
         run: |
