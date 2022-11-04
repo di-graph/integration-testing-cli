@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 JSON_FILEPATH="/tmp/plan_json.json"
 RUN_URL=`echo $1 | grep -Eo 'https://[^ >]+' | head -1`
