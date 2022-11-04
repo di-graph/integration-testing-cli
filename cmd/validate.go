@@ -145,7 +145,7 @@ func validateTF() *cobra.Command {
 			issueNumber, _ := cmd.Flags().GetInt("issueNumber")
 			commitSHA, _ := cmd.Flags().GetString("commitSHA")
 
-			execCmd := exec.Command("/bin/sh", "./scripts/get_remote_plan_json.sh", tfPlanOutput, terraformAPIKey)
+			execCmd := exec.Command("/bin/sh", "/scripts/get_remote_plan_json.sh", tfPlanOutput, terraformAPIKey)
 			jsonPathBytes, err := execCmd.Output()
 			if err != nil {
 				return fmt.Errorf("error getting json plan %s", err.Error())
