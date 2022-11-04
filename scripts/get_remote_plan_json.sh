@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-
+echo "Hello"
 JSON_FILEPATH="/tmp/plan_json.json"
 RUN_URL=`echo $1 | grep -Eo 'https://[^ >]+' | head -1`
 echo $RUN_URL
