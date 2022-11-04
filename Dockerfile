@@ -17,6 +17,7 @@ FROM golang:1.19
 
 # Install Packages
 RUN apt-get update -q
+RUN apt-get install bash
  
 WORKDIR /app
 
