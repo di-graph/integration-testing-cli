@@ -5,6 +5,7 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,38 +15,61 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// // multipleCmd represents the multiple command
-// var multipleCmd = &cobra.Command{
-// 	Use:   "multiple",
-// 	Short: "A brief description of your command",
-// 	Long: `A longer description that spans multiple lines and likely contains examples
-// and usage of using your command. For example:
+type ResourceChangeDetails struct {
+	Actions         []string    `json:"actions"`
+	Before          interface{} `json:"before"`
+	After           interface{} `json:"after"`
+	AfterUnknown    interface{} `json:"after_unknown"`
+	BeforeSensitive interface{} `json:"before_sensitive"`
+	AfterSensitive  interface{} `json:"after_sensitive"`
+}
 
-// Cobra is a CLI library for Go that empowers applications.
-// This application is a tool to generate the needed files
-// to quickly create a Cobra application.`,
-// 	ValidArgs: []string{"--", "-"},
-// 	RunE: func(cmd *cobra.Command, args []string) error {
-// 		times, _ := cmd.Flags().GetString("times")
-// 		fmt.Printf("multiple called with %s\n times", times)
-// 	},
-// }
+type ResourceChange struct {
+	Address      string                `json:"address"`
+	Mode         string                `json:"mode"`
+	Type         string                `json:"type"`
+	Name         string                `json:"name"`
+	ProviderName string                `json:"provider_name"`
+	Change       ResourceChangeDetails `json:"change"`
+}
 
-// multipleCmd.Flags().String("commit", "", "Commit SHA to post comment on, mutually exclusive with pull-request")
+type ParsedTerraformPlan struct {
+	ResourceChanges []ResourceChange `json:"resource_changes"`
+}
 
-// func init() {
-// 	echoCmd.AddCommand(multipleCmd)
+func parseTerraformPlanJSON(jsonFilePath string) error {
+	jsonFile, err := os.Open(jsonFilePath)
+	if err != nil {
+		return fmt.Errorf("error %s", err.Error())
+	}
 
-// 	// Here you will define your flags and configuration settings.
+	jsonByteValue, _ := ioutil.ReadAll(jsonFile)
 
-// 	// Cobra supports Persistent Flags which will work for this command
-// 	// and all subcommands, e.g.:
-// 	// multipleCmd.PersistentFlags().String("foo", "", "A help for foo")
+	var parsedJSONPlan ParsedTerraformPlan
 
-// 	// Cobra supports local flags which will only run when this command
-// 	// is called directly, e.g.:
-// 	// multipleCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-// }
+	json.Unmarshal(jsonByteValue, &parsedJSONPlan)
+
+	var actualChanges []ResourceChange
+	for _, resourceChange := range parsedJSONPlan.ResourceChanges {
+		for _, action := range resourceChange.Change.Actions {
+			if action != "no-op" {
+				actualChanges = append(actualChanges, resourceChange)
+			}
+		}
+	}
+
+	var parsedPlanChangesOnly = ParsedTerraformPlan{
+		ResourceChanges: actualChanges,
+	}
+
+	fmt.Printf("%v\n", parsedPlanChangesOnly)
+
+	defer jsonFile.Close()
+
+	// cleanup by removing temp file that was written
+	os.Remove(jsonFilePath)
+	return nil
+}
 
 func validateTF() *cobra.Command {
 	cmd := &cobra.Command{
@@ -85,18 +109,4 @@ func validateTF() *cobra.Command {
 	// _ = cmd.MarkFlagRequired("digraphAPIKey")
 
 	return cmd
-}
-
-func parseTerraformPlanJSON(jsonFilePath string) error {
-	jsonFile, err := os.Open(jsonFilePath)
-	if err != nil {
-		return fmt.Errorf("error %s", err.Error())
-	}
-
-	jsonByteValue, _ := ioutil.ReadAll(jsonFile)
-	fmt.Print(string(jsonByteValue))
-
-	defer jsonFile.Close()
-	os.Remove(jsonFilePath)
-	return nil
 }
