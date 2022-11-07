@@ -9,83 +9,26 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"os"
-	"os/exec"
-	"strings"
 	"time"
 
+	"github.com/di-graph/integration-testing-cli/utils"
 	"github.com/spf13/cobra"
 )
 
-type ResourceChangeDetails struct {
-	Actions         []string    `json:"actions"`
-	Before          interface{} `json:"before"`
-	After           interface{} `json:"after"`
-	AfterUnknown    interface{} `json:"after_unknown"`
-	BeforeSensitive interface{} `json:"before_sensitive"`
-	AfterSensitive  interface{} `json:"after_sensitive"`
-}
-
-type ResourceChange struct {
-	Address      string                `json:"address"`
-	Mode         string                `json:"mode"`
-	Type         string                `json:"type"`
-	Name         string                `json:"name"`
-	ProviderName string                `json:"provider_name"`
-	Change       ResourceChangeDetails `json:"change"`
-}
-
-type ParsedTerraformPlan struct {
-	ResourceChanges []ResourceChange `json:"resource_changes"`
-}
-
 type TerraformConfigValidatorInput struct {
-	TerraformPlan             ParsedTerraformPlan `json:"terraform_plan"`
-	Organization              string              `json:"organization"`
-	Repository                string              `json:"repository"`
-	TriggeringActionEventName string              `json:"event_name"`
-	IssueNumber               int                 `json:"issue_number"`
-	CommitSHA                 string              `json:"commit_sha"`
-	Ref                       string              `json:"ref"`
+	TerraformPlan             utils.ParsedTerraformPlan `json:"terraform_plan"`
+	Organization              string                    `json:"organization"`
+	Repository                string                    `json:"repository"`
+	TriggeringActionEventName string                    `json:"event_name"`
+	IssueNumber               int                       `json:"issue_number"`
+	CommitSHA                 string                    `json:"commit_sha"`
+	Ref                       string                    `json:"ref"`
 }
 
 const validationURL = "https://app.getdigraph.com/api/validate/terraform"
 
-func parseTerraformPlanJSON(jsonFilePath string) (ParsedTerraformPlan, error) {
-	jsonFile, err := os.Open(jsonFilePath)
-	if err != nil {
-		return ParsedTerraformPlan{}, fmt.Errorf("error %s", err.Error())
-	}
-
-	jsonByteValue, _ := ioutil.ReadAll(jsonFile)
-
-	var parsedJSONPlan ParsedTerraformPlan
-
-	json.Unmarshal(jsonByteValue, &parsedJSONPlan)
-
-	var actualChanges []ResourceChange
-	for _, resourceChange := range parsedJSONPlan.ResourceChanges {
-		for _, action := range resourceChange.Change.Actions {
-			if action != "no-op" {
-				actualChanges = append(actualChanges, resourceChange)
-			}
-		}
-	}
-
-	var parsedPlanChangesOnly = ParsedTerraformPlan{
-		ResourceChanges: actualChanges,
-	}
-
-	defer jsonFile.Close()
-
-	// cleanup by removing temp file that was written
-	os.Remove(jsonFilePath)
-	return parsedPlanChangesOnly, nil
-}
-
-func invokeDigraphValidateAPI(parsedTFPlan ParsedTerraformPlan, digraphAPIKey, organization, repository, eventName, ref, commitSHA string, issueNumber int) error {
+func invokeDigraphValidateAPI(parsedTFPlan utils.ParsedTerraformPlan, digraphAPIKey, organization, repository, eventName, ref, commitSHA string, issueNumber int) error {
 	requestBody := TerraformConfigValidatorInput{
 		TerraformPlan:             parsedTFPlan,
 		Organization:              organization,
@@ -145,19 +88,11 @@ func validateTF() *cobra.Command {
 			issueNumber, _ := cmd.Flags().GetInt("issueNumber")
 			commitSHA, _ := cmd.Flags().GetString("commitSHA")
 
-			execCmd := exec.Command("/bin/sh", "./scripts/get_remote_plan_json.sh", tfPlanOutput, terraformAPIKey)
-			jsonPathBytes, err := execCmd.Output()
+			jsonFilePath, err := utils.FetchRemoteTerraformPlan(tfPlanOutput, terraformAPIKey)
 			if err != nil {
-				return fmt.Errorf("error getting json plan %s", err.Error())
+				return fmt.Errorf("error getting plan json %s", err.Error())
 			}
-
-			fmt.Print("Successfully got JSON plan\n")
-
-			jsonFilePath := strings.TrimSpace(strings.Replace(string(jsonPathBytes), "\r\n", "", -1))
-
-			fmt.Printf("Got json file path: %s\n", jsonFilePath)
-
-			parsedPlan, err := parseTerraformPlanJSON(jsonFilePath)
+			parsedPlan, err := utils.ParseTerraformPlanJSON(jsonFilePath)
 			if err != nil {
 				return fmt.Errorf("error parsing JSON %s", err.Error())
 			}

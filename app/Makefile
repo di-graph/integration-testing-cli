@@ -2,7 +2,7 @@ BINARY := integration-testing-cli
 PKG := github.com/di-graph/integration-testing-cli
 
 build:
-	CGO_ENABLED=0 go build -o $(BINARY) $(PKG)
+	go install && CGO_ENABLED=0 go build -o $(BINARY) $(PKG)
 
 windows:
 	env GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o $(BINARY).exe $(PKG)
