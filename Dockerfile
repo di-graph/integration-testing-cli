@@ -25,7 +25,7 @@ COPY . .
 
 RUN go mod download
 # RUN env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /integration-testing-cli github.com/di-graph/integration-testing-cli
-RUN NO_DIRTY=true make build
+RUN NO_DIRTY=true make release
 RUN chmod +x /app/integration-testing-cli
 RUN chmod +x /app/scripts/get_remote_plan_json.sh
 ENTRYPOINT ["/app/integration-testing-cli"] 
