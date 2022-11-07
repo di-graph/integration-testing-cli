@@ -27,10 +27,8 @@ RUN apt-get install bash
 WORKDIR /app
 
 COPY . .
-COPY /scripts /usr/bin/
 RUN go mod download
 RUN NO_DIRTY=true make release
 RUN NO_DIRTY=true make build
 RUN chmod +x /app/integration-testing-cli
-RUN chmod +x /app/scripts/get_remote_plan_json.sh
 ENTRYPOINT ["/app/integration-testing-cli"] 
