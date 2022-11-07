@@ -15,16 +15,20 @@
 
 FROM golang:1.19 
 
+# Set Environment Variables
+SHELL ["/bin/bash", "-c"]
+ENV HOME /app
+ENV CGO_ENABLED 0
+
 # Install Packages
 RUN apt-get update -q
 RUN apt-get install bash
  
 WORKDIR /app
 
-COPY ./app . 
-
+COPY . .
+COPY /scripts /usr/bin/
 RUN go mod download
-# RUN env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /integration-testing-cli github.com/di-graph/integration-testing-cli
 RUN NO_DIRTY=true make release
 RUN NO_DIRTY=true make build
 RUN chmod +x /app/integration-testing-cli
