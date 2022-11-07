@@ -1,7 +1,5 @@
 #!/usr/bin/bash
-which echo
-echo "Here"
-JSON_FILEPATH="plan_json.json"
+JSON_FILEPATH="/tmp/plan_json.json"
 RUN_URL=`echo $1 | grep -Eo 'https://[^ >]+' | head -1`
 RUN_ID=`echo $RUN_URL | awk -F/ '{print $NF}'`
 PLAN_ID=`curl -N -s \
