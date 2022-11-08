@@ -75,10 +75,10 @@ func invokeDigraphValidateAPI(parsedTFPlan utils.ParsedTerraformPlan, digraphAPI
 	return nil
 }
 
-func validateTF() *cobra.Command {
+func validate() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:       "validate-terraform",
-		Short:     "Validate terraform changes",
+		Use:       "validate",
+		Short:     "Validate infra config changes",
 		Long:      ``,
 		ValidArgs: []string{"--", "-"},
 		RunE: func(cmd *cobra.Command, args []string) error {
