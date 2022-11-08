@@ -93,7 +93,7 @@ func validateTF() *cobra.Command {
 			ref, _ := cmd.Flags().GetString("ref")
 
 			issueNumber, _ := cmd.Flags().GetInt("issueNumber")
-			commitSHA, _ := cmd.Flags().GetString("commitSHA")
+			commitSHA, _ := cmd.Flags().GetString("commit-sha")
 
 			var jsonFilePath string
 			var err error
@@ -146,7 +146,7 @@ func validateTF() *cobra.Command {
 
 	cmd.Flags().String("ref", "", "Branch ref")
 	cmd.Flags().Int("issueNumber", 0, "Pull Request Number")
-	cmd.Flags().String("commitSHA", "", "Commit SHA")
+	cmd.Flags().String("commit-sha", "", "Commit SHA")
 
 	return cmd
 }
