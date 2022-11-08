@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -29,7 +30,7 @@ type TerraformConfigValidatorInput struct {
 
 const validationURL = "https://app.getdigraph.com/api/validate/terraform"
 
-func invokeDigraphValidateAPI(parsedTFPlan utils.ParsedTerraformPlan, digraphAPIKey, repository, ref, commitSHA string, issueNumber int) error {
+func invokeDigraphValidateAPI(parsedTFPlan utils.ParsedTerraformPlan, digraphAPIKey, repository, ref, commitSHA string, issueNumber int) (string, error) {
 	requestBody := TerraformConfigValidatorInput{
 		TerraformPlan: parsedTFPlan,
 		Repository:    repository,
@@ -43,21 +44,21 @@ func invokeDigraphValidateAPI(parsedTFPlan utils.ParsedTerraformPlan, digraphAPI
 		requestBody.CommitSHA = commitSHA
 		requestBody.TriggeringActionEventName = "push"
 	} else {
-		return errors.New("invalid input- must specify pull request or commit sha")
+		return "", errors.New("invalid input- must specify pull request or commit sha")
 	}
 
 	if len(commitSHA) > 0 && len(ref) == 0 {
-		return errors.New("must provide branch ref associated with commit")
+		return "", errors.New("must provide branch ref associated with commit")
 	}
 
 	requestBytes, err := json.Marshal(requestBody)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	req, err := http.NewRequest(http.MethodPost, validationURL, bytes.NewReader(requestBytes))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	req.Header.Set("X-Digraph-Secret-Key", digraphAPIKey)
@@ -66,13 +67,16 @@ func invokeDigraphValidateAPI(parsedTFPlan utils.ParsedTerraformPlan, digraphAPI
 		Timeout: 30 * time.Second,
 	}
 
-	_, err = client.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		fmt.Printf("client: error making http request: %s\n", err)
-		return err
+		return "", err
 	}
 
-	return nil
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+
+	return string(body), nil
 }
 
 func validate() *cobra.Command {
@@ -131,7 +135,7 @@ func validate() *cobra.Command {
 				return fmt.Errorf("error parsing JSON %s", err.Error())
 			}
 
-			err = invokeDigraphValidateAPI(parsedPlan, digraphAPIKey, repository, ref, commitSHA, issueNumber)
+			output, err := invokeDigraphValidateAPI(parsedPlan, digraphAPIKey, repository, ref, commitSHA, issueNumber)
 			if err != nil {
 				return fmt.Errorf("error calling API %s", err.Error())
 			}
@@ -140,6 +144,7 @@ func validate() *cobra.Command {
 				// cleanup by removing temp file that was written for terraform output case
 				os.Remove(jsonFilePath)
 			}
+			fmt.Printf("%s\n", output)
 			return nil
 		},
 	}
