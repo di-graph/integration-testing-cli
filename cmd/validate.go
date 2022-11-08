@@ -20,7 +20,6 @@ import (
 
 type TerraformConfigValidatorInput struct {
 	TerraformPlan             utils.ParsedTerraformPlan `json:"terraform_plan"`
-	Organization              string                    `json:"organization"`
 	Repository                string                    `json:"repository"`
 	TriggeringActionEventName string                    `json:"event_name"`
 	IssueNumber               int                       `json:"issue_number"`
@@ -30,19 +29,19 @@ type TerraformConfigValidatorInput struct {
 
 const validationURL = "https://app.getdigraph.com/api/validate/terraform"
 
-func invokeDigraphValidateAPI(parsedTFPlan utils.ParsedTerraformPlan, digraphAPIKey, organization, repository, eventName, ref, commitSHA string, issueNumber int) error {
+func invokeDigraphValidateAPI(parsedTFPlan utils.ParsedTerraformPlan, digraphAPIKey, repository, ref, commitSHA string, issueNumber int) error {
 	requestBody := TerraformConfigValidatorInput{
-		TerraformPlan:             parsedTFPlan,
-		Organization:              organization,
-		Repository:                repository,
-		Ref:                       ref,
-		TriggeringActionEventName: eventName,
+		TerraformPlan: parsedTFPlan,
+		Repository:    repository,
+		Ref:           ref,
 	}
 
 	if issueNumber > 0 {
 		requestBody.IssueNumber = issueNumber
+		requestBody.TriggeringActionEventName = "pull_request"
 	} else if len(commitSHA) > 0 {
 		requestBody.CommitSHA = commitSHA
+		requestBody.TriggeringActionEventName = "push"
 	} else {
 		return errors.New("invalid input- must specify pull request or commit sha")
 	}
@@ -88,9 +87,7 @@ func validate() *cobra.Command {
 
 			terraformAPIKey, _ := cmd.Flags().GetString("terraformAPIKey")
 			digraphAPIKey, _ := cmd.Flags().GetString("digraphAPIKey")
-			organization, _ := cmd.Flags().GetString("organization")
 			repository, _ := cmd.Flags().GetString("repository")
-			eventName, _ := cmd.Flags().GetString("eventName")
 			ref, _ := cmd.Flags().GetString("ref")
 
 			issueNumber, _ := cmd.Flags().GetInt("issueNumber")
@@ -134,7 +131,7 @@ func validate() *cobra.Command {
 				return fmt.Errorf("error parsing JSON %s", err.Error())
 			}
 
-			err = invokeDigraphValidateAPI(parsedPlan, digraphAPIKey, organization, repository, eventName, ref, commitSHA, issueNumber)
+			err = invokeDigraphValidateAPI(parsedPlan, digraphAPIKey, repository, ref, commitSHA, issueNumber)
 			if err != nil {
 				return fmt.Errorf("error calling API %s", err.Error())
 			}
@@ -154,14 +151,8 @@ func validate() *cobra.Command {
 
 	cmd.Flags().String("digraphAPIKey", "", "Digraph API Key")
 
-	cmd.Flags().String("organization", "", "Github organization")
-	_ = cmd.MarkFlagRequired("organization")
-
 	cmd.Flags().String("repository", "", "Github repository")
 	_ = cmd.MarkFlagRequired("repository")
-
-	cmd.Flags().String("eventName", "", "Pull or Push")
-	_ = cmd.MarkFlagRequired("eventName")
 
 	cmd.Flags().String("ref", "", "Branch ref")
 	cmd.Flags().Int("issueNumber", 0, "Pull Request Number")
