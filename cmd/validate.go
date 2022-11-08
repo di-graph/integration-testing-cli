@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/di-graph/integration-testing-cli/utils"
+	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 )
 
@@ -95,6 +96,26 @@ func validate() *cobra.Command {
 			issueNumber, _ := cmd.Flags().GetInt("issueNumber")
 			commitSHA, _ := cmd.Flags().GetString("commit-sha")
 
+			if len(digraphAPIKey) == 0 {
+				err := godotenv.Load(".env")
+
+				if err != nil {
+					return fmt.Errorf("must specify digraphAPIKey as argument or set it within a .env file")
+				}
+
+				digraphAPIKey = os.Getenv("digraphAPIKey")
+			}
+
+			if len(terraformAPIKey) == 0 {
+				err := godotenv.Load(".env")
+
+				if err != nil {
+					return fmt.Errorf("must specify terraformAPIKey as argument or set it within a .env file")
+				}
+
+				terraformAPIKey = os.Getenv("terraformAPIKey")
+			}
+
 			var jsonFilePath string
 			var err error
 			if len(tfPlanOutput) > 0 {
@@ -130,10 +151,8 @@ func validate() *cobra.Command {
 	cmd.Flags().String("jsonPathPlan", "", "Filepath to terraform plan JSON file")
 
 	cmd.Flags().String("terraformAPIKey", "", "Terraform API Key")
-	_ = cmd.MarkFlagRequired("terraformAPIKey")
 
 	cmd.Flags().String("digraphAPIKey", "", "Digraph API Key")
-	_ = cmd.MarkFlagRequired("digraphAPIKey")
 
 	cmd.Flags().String("organization", "", "Github organization")
 	_ = cmd.MarkFlagRequired("organization")
