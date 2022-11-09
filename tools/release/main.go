@@ -71,9 +71,9 @@ func newAuthedGithubClient() *github.Client {
 
 func findReleaseAssets() ([]string, error) {
 	arguments := []string{
-		"./app/*.tar.gz",
-		"./app/*.zip",
-		"./app/*.sha256",
+		"*.tar.gz",
+		"*.zip",
+		"*.sha256",
 	}
 
 	var toUpload []string
