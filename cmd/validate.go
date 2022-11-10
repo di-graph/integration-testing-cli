@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -26,29 +27,37 @@ type TerraformConfigValidatorInput struct {
 	IssueNumber               int                       `json:"issue_number"`
 	CommitSHA                 string                    `json:"commit_sha"`
 	Ref                       string                    `json:"ref"`
+	InvocationMode            string                    `json:"invocation_mode"`
 }
 
 const validationURL = "https://app.getdigraph.com/api/validate/terraform"
 
-func invokeDigraphValidateAPI(parsedTFPlan utils.ParsedTerraformPlan, digraphAPIKey, repository, ref, commitSHA string, issueNumber int) (string, error) {
+func invokeDigraphValidateAPI(parsedTFPlan utils.ParsedTerraformPlan, digraphAPIKey, mode, repository, ref, commitSHA string, issueNumber int) (string, error) {
 	requestBody := TerraformConfigValidatorInput{
-		TerraformPlan: parsedTFPlan,
-		Repository:    repository,
-		Ref:           ref,
+		TerraformPlan:  parsedTFPlan,
+		Repository:     repository,
+		Ref:            ref,
+		InvocationMode: mode,
 	}
 
-	if issueNumber > 0 {
-		requestBody.IssueNumber = issueNumber
-		requestBody.TriggeringActionEventName = "pull_request"
-	} else if len(commitSHA) > 0 {
-		requestBody.CommitSHA = commitSHA
-		requestBody.TriggeringActionEventName = "push"
-	} else {
-		return "", errors.New("invalid input- must specify pull request or commit sha")
-	}
+	if mode == "ci/cd" {
+		if issueNumber > 0 {
+			requestBody.IssueNumber = issueNumber
+			requestBody.TriggeringActionEventName = "pull_request"
+		} else if len(commitSHA) > 0 {
+			requestBody.CommitSHA = commitSHA
+			requestBody.TriggeringActionEventName = "push"
+		} else {
+			return "", errors.New("invalid input- must specify pull request or commit sha")
+		}
 
-	if len(commitSHA) > 0 && len(ref) == 0 {
-		return "", errors.New("must provide branch ref associated with commit")
+		if len(commitSHA) > 0 && len(ref) == 0 {
+			return "", errors.New("must provide branch ref associated with commit")
+		}
+
+		if len(repository) == 0 {
+			return "", errors.New("must provide repository flag")
+		}
 	}
 
 	requestBytes, err := json.Marshal(requestBody)
@@ -86,48 +95,71 @@ func validate() *cobra.Command {
 		Long:      ``,
 		ValidArgs: []string{"--", "-"},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tfPlanOutput, _ := cmd.Flags().GetString("stdOutPlan")
-			jsonPathPlan, _ := cmd.Flags().GetString("jsonPathPlan")
+			tfPlanOutput, _ := cmd.Flags().GetString("raw-output-plan")
+			jsonPathPlan, _ := cmd.Flags().GetString("json-path-plan")
+			tfRawPath, _ := cmd.Flags().GetString("output-path-plan")
 
-			terraformAPIKey, _ := cmd.Flags().GetString("terraformAPIKey")
-			digraphAPIKey, _ := cmd.Flags().GetString("digraphAPIKey")
+			terraformAPIKey, _ := cmd.Flags().GetString("terraform-api-key")
+			digraphAPIKey, _ := cmd.Flags().GetString("api-key")
 			repository, _ := cmd.Flags().GetString("repository")
 			ref, _ := cmd.Flags().GetString("ref")
 
-			issueNumber, _ := cmd.Flags().GetInt("issueNumber")
+			issueNumber, _ := cmd.Flags().GetInt("issue-number")
 			commitSHA, _ := cmd.Flags().GetString("commit-sha")
+
+			mode, _ := cmd.Flags().GetString("mode")
 
 			if len(digraphAPIKey) == 0 {
 				err := godotenv.Load(".env")
 
 				if err != nil {
-					return fmt.Errorf("must specify digraphAPIKey as argument or set it within a .env file")
+					return fmt.Errorf("must specify api-key as argument or set it within a .env file")
 				}
 
-				digraphAPIKey = os.Getenv("digraphAPIKey")
-			}
-
-			if len(terraformAPIKey) == 0 {
-				err := godotenv.Load(".env")
-
-				if err != nil {
-					return fmt.Errorf("must specify terraformAPIKey as argument or set it within a .env file")
-				}
-
-				terraformAPIKey = os.Getenv("terraformAPIKey")
+				digraphAPIKey = os.Getenv("api-key")
 			}
 
 			var jsonFilePath string
 			var err error
 			if len(tfPlanOutput) > 0 {
+				if len(terraformAPIKey) == 0 {
+					err := godotenv.Load(".env")
+
+					if err != nil {
+						return fmt.Errorf("must specify terraform-api-key as argument or set it within a .env file")
+					}
+
+					terraformAPIKey = os.Getenv("terraform-api-key")
+				}
+
 				jsonFilePath, err = utils.FetchRemoteTerraformPlan(tfPlanOutput, terraformAPIKey)
 				if err != nil {
 					return fmt.Errorf("error getting plan json %s", err.Error())
 				}
 			} else if len(jsonPathPlan) > 0 {
 				jsonFilePath = jsonPathPlan
+			} else if len(tfRawPath) > 0 {
+				if len(terraformAPIKey) == 0 {
+					err := godotenv.Load(".env")
+
+					if err != nil {
+						return fmt.Errorf("must specify terraform-api-key as argument or set it within a .env file")
+					}
+
+					terraformAPIKey = os.Getenv("terraform-api-key")
+				}
+				rawOutputFile, err := os.Open(tfRawPath)
+				if err != nil {
+					return fmt.Errorf("error %s", err.Error())
+				}
+
+				rawByteValue, _ := ioutil.ReadAll(rawOutputFile)
+				jsonFilePath, err = utils.FetchRemoteTerraformPlan(string(rawByteValue), terraformAPIKey)
+				if err != nil {
+					return fmt.Errorf("error getting plan json %s", err.Error())
+				}
 			} else {
-				return fmt.Errorf("must specify either stdOutPlan or jsonPathPlan")
+				return fmt.Errorf("must specify raw-output-plan or json-path-plan or output-path-plan")
 			}
 
 			parsedPlan, err := utils.ParseTerraformPlanJSON(jsonFilePath)
@@ -135,7 +167,7 @@ func validate() *cobra.Command {
 				return fmt.Errorf("error parsing JSON %s", err.Error())
 			}
 
-			output, err := invokeDigraphValidateAPI(parsedPlan, digraphAPIKey, repository, ref, commitSHA, issueNumber)
+			output, err := invokeDigraphValidateAPI(parsedPlan, digraphAPIKey, mode, repository, ref, commitSHA, issueNumber)
 			if err != nil {
 				return fmt.Errorf("error calling API %s", err.Error())
 			}
@@ -144,24 +176,28 @@ func validate() *cobra.Command {
 				// cleanup by removing temp file that was written for terraform output case
 				os.Remove(jsonFilePath)
 			}
-			fmt.Printf("%s\n", output)
+			if mode == "cli" {
+				fmt.Printf("%s\n", output)
+			}
 			return nil
 		},
 	}
 
-	cmd.Flags().String("stdOutPlan", "", "Terminal output from terraform plan command")
-	cmd.Flags().String("jsonPathPlan", "", "Filepath to terraform plan JSON file")
+	cmd.Flags().String("raw-output-plan", "", "Terminal output from terraform plan command")
+	cmd.Flags().String("output-path-plan", "", "Filepath for terminal output from terraform plan command")
+	cmd.Flags().String("json-path-plan", "", "Filepath to terraform plan JSON file")
 
-	cmd.Flags().String("terraformAPIKey", "", "Terraform API Key")
+	cmd.Flags().String("terraform-api-key", "", "Terraform API Key")
 
-	cmd.Flags().String("digraphAPIKey", "", "Digraph API Key")
+	cmd.Flags().String("api-key", "", "Digraph API Key")
 
 	cmd.Flags().String("repository", "", "Github repository")
-	_ = cmd.MarkFlagRequired("repository")
 
 	cmd.Flags().String("ref", "", "Branch ref")
-	cmd.Flags().Int("issueNumber", 0, "Pull Request Number")
+	cmd.Flags().Int("issue-number", 0, "Pull Request Number")
 	cmd.Flags().String("commit-sha", "", "Commit SHA")
+
+	cmd.Flags().String("mode", "ci/cd", "Running mode- ci/cd or cli")
 
 	return cmd
 }
