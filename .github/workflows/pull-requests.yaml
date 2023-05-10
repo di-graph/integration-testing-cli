@@ -1,0 +1,15 @@
+name: pull-request-opened-notifications
+on:
+  pull_request:
+    types: [opened]
+jobs:
+  notify-in-slack:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: 8398a7/action-slack@v3
+      name: Pull Request Opened
+      with:
+        status: ${{ job.status }}
+        fields: repo,pullRequest,author,workflow # selectable (default: repo,message)
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CODE_REVIEWS_WEBHOOK_URL }} # required
